@@ -1,12 +1,26 @@
-/* Cricket Player Stats Tracker - Phase 1
+
+/* Cricket Player Stats Tracker - Phase 1 (Fixed)
    1. Add player: name, runs scored, balls faced
    2. View all players with strike rate = (runs x 100) / balls
-   3. Search player by name
+   3. Search player by name (Case-insensitive)
 */
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MAX 50
+
+/* Helper function for case-insensitive string comparison */
+int compare_case_insensitive(const char *s1, const char *s2) {
+    while (*s1 && *s2) {
+        if (tolower((unsigned char)*s1) != tolower((unsigned char)*s2)) {
+            return 0;
+        }
+        s1++;
+        s2++;
+    }
+    return *s1 == *s2;
+}
 
 int main()
 {
@@ -25,7 +39,13 @@ int main()
         printf("3. Search Player by Name\n");
         printf("4. Exit\n");
         printf("Enter your choice: ");
-        scanf("%d", &choice);
+
+        if (scanf("%d", &choice) != 1) {
+            /* Clear invalid input if user types letters */
+            while (getchar() != '\n');
+            printf("Invalid input! Please enter a number.\n");
+            continue;
+        }
 
         switch (choice) {
         case 1:
@@ -33,14 +53,32 @@ int main()
                 printf("Cannot add: storage full (%d players).\n", MAX);
                 break;
             }
+
             printf("Enter player name: ");
-            scanf(" %29[^\n]", name[count]);   /* reads name with spaces */
-            printf("Enter runs scored: ");
-            scanf("%d", &runs[count]);
-            printf("Enter balls faced: ");
-            scanf("%d", &balls[count]);
+            scanf(" %29[^\n]", name[count]);
+
+            /* Validate non-negative runs */
+            do {
+                printf("Enter runs scored (>= 0): ");
+                if (scanf("%d", &runs[count]) != 1 || runs[count] < 0) {
+                    printf("Invalid input! Runs cannot be negative.\n");
+                    while (getchar() != '\n'); /* clear buffer */
+                    runs[count] = -1;
+                }
+            } while (runs[count] < 0);
+
+            /* Validate non-negative balls */
+            do {
+                printf("Enter balls faced (>= 0): ");
+                if (scanf("%d", &balls[count]) != 1 || balls[count] < 0) {
+                    printf("Invalid input! Balls faced cannot be negative.\n");
+                    while (getchar() != '\n'); /* clear buffer */
+                    balls[count] = -1;
+                }
+            } while (balls[count] < 0);
+
             count++;
-            printf("Player added with S.No. %d\n", count);
+            printf("Player added successfully with S.No. %d!\n", count);
             break;
 
         case 2:
@@ -52,9 +90,9 @@ int main()
             printf("----------------------------------------------------------\n");
             for (i = 0; i < count; i++) {
                 if (balls[i] > 0)
-                    sr = (runs[i] * 100.0) / balls[i];
+                    sr = (runs[i] * 100.0f) / balls[i];
                 else
-                    sr = 0;
+                    sr = 0.0f;
                 printf("%-6d %-25s %6d %6d %12.2f\n", i + 1, name[i], runs[i], balls[i], sr);
             }
             break;
@@ -67,12 +105,15 @@ int main()
             printf("Enter player name to search: ");
             scanf(" %29[^\n]", key);
             found = 0;
+
             for (i = 0; i < count; i++) {
-                if (strcmp(name[i], key) == 0) {
+                if (compare_case_insensitive(name[i], key)) {
                     if (balls[i] > 0)
-                        sr = (runs[i] * 100.0) / balls[i];
+                        sr = (runs[i] * 100.0f) / balls[i];
                     else
-                        sr = 0;
+                        sr = 0.0f;
+
+                    printf("\n--- Match Found ---\n");
                     printf("S.No.: %d\n", i + 1);
                     printf("Name: %s\n", name[i]);
                     printf("Runs: %d\n", runs[i]);
@@ -81,8 +122,8 @@ int main()
                     found = 1;
                 }
             }
-            if (found == 0)
-                printf("No player found with name %s\n", key);
+            if (!found)
+                printf("No player found with name '%s'\n", key);
             break;
 
         case 4:
